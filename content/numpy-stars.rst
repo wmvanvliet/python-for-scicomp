@@ -299,8 +299,8 @@ We could assign stars to their respective color bins using boolean masking, but 
     print(bin_assignment)
 
 The function gives for each element of the ``color`` array (as an integer index), the index of the bin it belongs to.
-Since each element of the ``color`` array is the color of a star, we have now effectively assigned each star to a bin.
-Now we can compute for each bin, the median brightness and color of all the stars in that bin.
+Since each element of the ``color`` array is the color of a star, we have effectively assigned each star to a bin.
+Now, we can compute for each bin, the median brightness and color of all the stars in that bin.
 We will do this using a ``for`` loop and use a typical pattern for creating NumPy arrays: we first collect the values into a Python list and then convert that list into a NumPy array::
 
     bin_colors = list()  # we collect the median colors here
