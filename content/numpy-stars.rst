@@ -429,11 +429,11 @@ Let's use our ``predict_magnitude`` function to create a function that predicts 
         distance : float
             The estimated distance in light-years.
         """
-    color = magnitude_red - magnitude_blue
-    predicted_magnitude = predict_magnitude(color, beta)
-    # Inverse of the formula we used to derive intrinsic magnitude from apparent magnitude.
-    predicted_distance_parsecs = np.pow(10, ((magnitude_g - predicted_magnitude) + 10) / 5)
-    return predicted_distance_parsecs * 3.26156
+        color = magnitude_red - magnitude_blue
+        predicted_magnitude = predict_magnitude(color, beta)
+        # Inverse of the formula we used to derive intrinsic magnitude from apparent magnitude.
+        predicted_distance_parsecs = np.pow(10, ((magnitude_g - predicted_magnitude) + 10) / 5)
+        return predicted_distance_parsecs * 3.26156
 
 A sample of some far away main sequence stars in the Gaia dataset can be found in :download:`../resources/data/numpy/far_stars.csv`.
 Their parallax values may be unreliable, so let's predict their distance using main sequence fitting::
