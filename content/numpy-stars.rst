@@ -291,7 +291,8 @@ For example, there is the NumPy equivalent of Python's :func:`range` function, :
 
 But for our purposes, :func:`numpy.linspace` is even better::
 
-    bins = np.linspace(0.5, 4, num=100)  # 100 numbers evenly spread between 0.5 and 4
+    n_bins = 100
+    bins = np.linspace(0.5, 4, num=n_bins)  # 100 numbers evenly spread between 0.5 and 4
 
 We could assign stars to their respective color bins using boolean masking, but NumPy offers the :func:`numpy.digitize` function especially for this purpose::
 
@@ -303,13 +304,17 @@ Since each element of the ``color`` array is the color of a star, we have effect
 Now, we can compute for each bin, the median brightness and color of all the stars in that bin.
 We will do this using a ``for`` loop and use a typical pattern for creating NumPy arrays: we first collect the values into a Python list and then convert that list into a NumPy array::
 
-    bin_colors = list()  # we collect the median colors here
-    bin_magnitudes = list()  # we collect the median magnitudes here
-    for star_indices in bin_assignment:
-        bin_color = np.median(color[star_indices])
-        bin_magnitude = np.median(magnitude[star_indices])
+    # We collect the median colors and magnitudes in these lists.
+    bin_colors = list()
+    bin_magnitudes = list()
+
+    # Loop over all the bins and compute the median color/magnitude.
+    for bin_index in np.arange(n_bins):
+        bin_color = np.median(color[bin_assignment == bin_index])
+        bin_magnitude = np.median(magnitude[bin_assignment == bin_index])
         bin_colors.append(bin_color)
         bin_magnitudes.append(bin_magnitude)
+
     # Convert the Python lists to NumPy arrays.
     bin_colors = np.array(bin_colors)
     bin_magnitudes = np.array(bin_magnitudes)
@@ -320,3 +325,121 @@ We will do this using a ``for`` loop and use a typical pattern for creating NumP
 .. seealso::
 
    `Numpy array creation docs <https://numpy.org/doc/stable/user/basics.creation.html>`_
+
+
+Doing linear algebra
+--------------------
+
+If we fit a curve through the  ``(color, magnitude)`` combinations, we obtain a function to predict a star's magnitude based on its color.
+We can do this with a bit of linear algebra.
+To get a feel for how the curve should look, let's draw the ``(color, magnitude)`` combinations on top of the Hertzsprung-Russel diagram (assuming it is still open, re-create it if it isn't)::
+
+    plt.plot(bin_colors, bin_magnitudes, color="green", linewidth=2)
+
+The curve is not a straight line, but something like a fifth order polynomial should be pretty good fit:
+
+.. math::
+   :name: A fifth order polynonial function
+
+   \text{magnitude} = \beta_5\,\text{color}^5 + \beta_4\,\text{color}^4 + \beta_2\,\text{color}^3 + \beta_2\,\text{color}^2 + \beta_1\,\text{color} + \beta_0
+
+"Fitting the curve" now means choosing the optimal :math:`\beta` values so that when we input the ``color``, we get a good prediction of ``magnitude``.
+A typical way to do this is a machine learning technique called `ordinary least squares (OLS) <https://en.wikipedia.org/wiki/Ordinary_least_squares>`__, where we collect everything we know in a matrix ``X`` and everything we wish to predict in a matrix ``Y`` and compute:
+
+.. math::
+   :name: The ordinary least squares function
+
+   \beta = (X^T X)^{-1} X^T Y
+
+The resulting ``beta`` vector contains the optimal linear combination (in the least-squares sense) of the columns of ``X`` to predict the columns of ``Y``.
+So, we create a 2D array ``X`` where the columns are ``bin_colors`` raised to different powers and set ``Y`` to ``bin_magnitude``.
+The code below does this, while demonstrating how to create a 2D array by gluing 1D arrays together, and how to generate an array containing only ``1``'s::
+
+    X = np.column_stack((
+        np.ones_like(bin_colors),  # bin_colors ** 0
+        bin_colors,                # bin_colors ** 1
+        bin_colors ** 2,
+        bin_colors ** 3,
+        bin_colors ** 4,
+        bin_colors ** 5,
+    ))
+    Y = bin_magnitudes
+
+To compute the OLS formula, we need a bunch of linear algebra functionality:
+
+* matrix multiplication, which is written as ``@`` in Python
+* matrix transpose, which NumPy arrays support through their property ``.T``
+* matrix inversion, which is done through :func:`numpy.linalg.inv`
+
+Using NumPy, the Python code can look very much like the math formula::
+
+    beta = np.linalg.inv(X.T @ X) @ X.T @ Y
+    print(beta)
+
+
+Creating and documenting functions in the scientific computing style
+--------------------------------------------------------------------
+
+Now that we have ``beta``, we can use formula (1) to predict a star's magnitude given its color.
+Let's wrap the formula in a function, so we can give it a name and write documentation on how to use it.
+NumPy comes with a style guide for writing docstrings for functions called `NumPyDoc <https://numpydoc.readthedocs.io/en/latest/format.html>`__::
+
+    def predict_magnitude(color, beta):
+        """Predict a main sequence star's inherent magnitude given its color.
+
+        Parameters
+        ----------
+        color : float | array of float, shape (n_stars,)
+            The color of the star(s), computed as red - blue.
+        beta: array of float, shape (6,)
+            The regression weights.
+
+        Returns
+        -------
+        magnitude : float
+            The estimated intrinsic magnitude of the star(s).
+        """
+        return (
+            beta[5] * color ** 5
+            beta[4] * color ** 4 +
+            beta[3] * color ** 3 +
+            beta[2] * color ** 2 +
+            beta[1] * color +
+            beta[0] +
+        )
+
+Let's use our ``predict_magnitude`` function to create a function that predicts the distance of a star given its color and apparent magnitude.::
+
+    def predict_distance(magnitude_g, magnitude_red, magnitude_blue, beta):
+        """Predict a main sequence star's distance given its apparent magnitude and color.
+
+        Parameters
+        ----------
+        magintude_g : float | array of float, shape (n_stars,)
+            The apparent magnitude of the star(s).
+        magnitude_red : float | array of float, shape (n_stars,)
+            The red component of the color of the star(s).
+        magnitude_blue : float | array of float, shape (n_stars,)
+            The blue component of the color of the star(s).
+        beta: array of float, shape (6,)
+            The regression weights.
+
+        Returns
+        -------
+        distance : float
+            The estimated distance in light-years.
+        """
+    color = magnitude_red - magnitude_blue
+    predicted_magnitude = predict_magnitude(color, beta)
+    # Inverse of the formula we used to derive intrinsic magnitude from apparent magnitude.
+    predicted_distance_parsecs = np.pow(10, ((magnitude_g - predicted_magnitude) + 10) / 5)
+    return predicted_distance_parsecs * 3.26156
+
+A sample of some far away main sequence stars in the Gaia dataset can be found in :download:`../resources/data/numpy/far_stars.csv`.
+Their parallax values may be unreliable, so let's predict their distance using main sequence fitting::
+
+    far_stars = np.genfromtxt("../resources/data/numpy/far_stars.csv", delimiter=",", skip_header=1)
+    print(far_stars.shape)
+
+    far_stars_distance = predict_distance(far_stars[:, 3], far_stars[:, 4], far_stars[:, 5], beta)
+    print(far_stars_distance)
