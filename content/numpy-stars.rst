@@ -162,7 +162,7 @@ Can we find the `Big Dipper <https://en.wikipedia.org/wiki/Ursa_Major>`__?
    :width: 300px
    :align: center
 
-   The Big Dipper as seen from Fujian. Image `retrieved from Wikipedia <https://en.wikipedia.org/wiki/Big_Dipper#/media/File:Big_Dipper_20210116.jpg>`__. CC-BY
+   The Big Dipper as seen from Fujian. Image `retrieved from Wikipedia <https://en.wikipedia.org/wiki/Big_Dipper#/media/File:Big_Dipper_20210116.jpg>`__. CC BY license.
 
 
 It lies within a section of the sky with a `right ascension <https://en.wikipedia.org/wiki/Right_ascension>`__ from 160 to 210 degrees, and a `declination <https://en.wikipedia.org/wiki/Declination>`__ from 45 to 65 degrees::
@@ -235,15 +235,32 @@ Exercises 1
       It is the second closest star to us.
       What is the distance from us to Alpha Centauri AB?
    #. What is the distance from us to the brightest star in the dataset (`Sirius <https://en.wikipedia.org/wiki/Sirius>`__)?
+      Remember that a smaller magnitude means a brighter star.
+      You can use :func:`numpy.argmin` to compute the index of the minimum value in an array.
    #. How many stars are there in the dataset that are even brighter than the brightest star in the Big Dipper (`Alioth <https://en.wikipedia.org/wiki/Alioth>`__)?
+      You can use :func:`numpy.min` to compute the minimum value in an array.
 
+.. solution:: Solution Numpy-1
+
+   #. Row index: ``alpha_centauri_ind = np.argsort(distance_ly)[1]``. Its distance is ``distance_ly[alpha_centauri_ind]`` = 4.395 light-years.
+   #. Brightest star index: ``brightest_ind = np.argsort(data[:, 3])[0]``. Its distance is ``distance_ly[brightest_ind]`` = 8.601 light-years.
+   #. The brightest star in the Big Dipper has a magnitude of ``np.min(big_dipper[:, 3])`` = 1.77.
+      There are ``data[data[:, 3] < np.min(big_dipper[:, 3])].shape`` = 28 stars in the dataset that are even brighter.
 
 
 Part 2: Estimating the distance of really far away stars
 --------------------------------------------------------
 
-When stars are very far away, the parallax is so small even the Gaia satellite cannot reliably measure it.
-Still, we can estimate roughly how far away they are based on a striking relationship between the brightness and the color of a star.
+On the southern hemisphere, you can see a large cluster of stars, 12 times wider than the moon:
+
+.. figure:: img/numpy/Large_Magellanic_Cloud.jpg
+   :width: 500px
+   :align: center
+
+   The Large Magallanic Cloud. Image created by Martin Bernard, `retrieved from Wikipedia <https://commons.wikimedia.org/wiki/File:Large_Magellanic_Cloud_100mm.jpg>`__. CC BY-SA license.
+
+It is so far away, the parallax is so small that even the Gaia satellite cannot reliably measure it.
+Still, we can estimate roughly how far away it is, based on a striking relationship between the brightness and the color of a star.
 A `Hertzsprung-Russel diagram <https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram>`__ illustrates this.
 Let's make one!
 
@@ -257,8 +274,8 @@ We will use the formula given in the `official Gaia paper <https://doi.org/10.10
 In our diagram, we want to show the color of a star on a scale from "very blue" to "very red", with yellow stars in between.
 We can compute this by taking the difference between the blue and red components of its color::
 
-    magnitude_red = data[:, 4]
-    magnitude_blue = data[:, 5]
+    magnitude_blue = data[:, 4]
+    magnitude_red = data[:, 5]
     color = magnitude_blue - magnitude_red
 
 Now we have everything we need to make the plot. Again, just take this plotting code at face value for now::
@@ -292,12 +309,12 @@ With the vast majority of the stars being main sequence stars, the median should
 There are various ways to create an array with equally spaced numbers.
 For example, there is the NumPy equivalent of Python's :func:`range` function, :func:`numpy.arange`::
 
-    bins = np.arange(0.1, 5, step=0.04)
+    bins = np.arange(0.1, 4.5, step=0.04)
 
 But for our purposes, :func:`numpy.linspace` is even better::
 
     n_bins = 100
-    bins = np.linspace(0.1, 5, num=n_bins)  # 100 numbers evenly spread between 0.1 and 4
+    bins = np.linspace(0.1, 4.5, num=n_bins)  # 100 numbers evenly spread between 0.1 and 4.5
 
 We could assign stars to their respective color bins using boolean masking, but NumPy offers the :func:`numpy.digitize` function especially for this purpose::
 
@@ -418,48 +435,58 @@ NumPy comes with a style guide for writing docstrings for functions called `NumP
             beta[0]
         )
 
-To do the final estimation of a star's distance, we can compare our estimate of the intrinsic magnitude of a star based on its color, with the apparent magnitude of the star on our sensors.
-The further away the star is, the dimmer it appears to us.
-Recall this formula we used earlier::
 
-    magnitude = magnitude_g + 5 * np.log10(parallax) - 10
+Exercises 2
+-----------
 
-We can solve for ``parallax``, which gives us::
+.. challenge:: Exercises: Numpy-2
 
-    estimated_parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+   To do the final estimation of a star's distance, we can compare our estimate of the intrinsic magnitude of a star based on its color, with the apparent magnitude of the star on our sensors.
+   The further away the star is, the dimmer it appears to us.
+   Recall this formula we used earlier::
+   
+       magnitude = magnitude_g + 5 * np.log10(parallax) - 10
+   
+   We can solve for ``parallax``, which gives us::
+   
+       estimated_parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+   
+   1. Write a function to predict the distance of a star given its color and apparent magnitude:
 
-That makes our final function that predicts the distance of a star given its color and apparent magnitude::
+      1. Use the ``predict_magnitude`` function to estimate the intrinsic magnitude.
+      2. Use the formula above to convert the difference between the apparent magnitude (``magnitude_g``) and intrinsic magnitude to a parallax value.
+      3. Convert the parallax value to a distance in light-years. See the lesson material above on how to do this if you don't remember.
 
-    def predict_distance(magnitude_g, color, beta):
-        """Predict a main sequence star's distance given its apparent magnitude and color.
+   2. Some main sequence stars from the Large Magallanic Cloud can be found in :download:`../resources/data/numpy/lmc_stars.csv`.
+      Predict their distance using the function you just created and take the average (:func:`numpy.mean`) as a representative value for roughly how far away the cloud is.
+      Given that the `Milky Way <https://en.wikipedia.org/wiki/Milky_Way>`__ galaxy is about 87400 light-years across, what does the distance to the Large Magallanic Cloud tell us?
 
-        Parameters
-        ----------
-        magintude_g : float | array of float, shape (n_stars,)
-            The apparent magnitude of the star(s).
-        color : float | array of float, shape (n_stars,)
-            The color of the star(s), computed as magnitude_blue - magnitude_red.
-        beta: array of float, shape (6,)
-            The regression weights.
+.. solution:: Solution Numpy-2
 
-        Returns
-        -------
-        distance : float
-            The estimated distance in light-years.
-        """
-        magnitude = predict_magnitude(color, beta)
-        parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
-        distance_parsecs = 1 / (parallax / 1000)
-        return distance_parsecs * 3.26156  # convert to light-years
+   .. code::
 
-Some far away main sequence stars from the Gaia dataset can be found in :download:`../resources/data/numpy/far_stars.csv`.
-Let's predict their distance using main sequence fitting, and compare that with the distance we obtain from their parallax values::
+       def predict_distance(magnitude_g, color, beta):
+           """Predict a main sequence star's distance given its apparent magnitude and color.
 
-    far_stars = np.genfromtxt("../resources/data/numpy/far_stars.csv", delimiter=",", skip_header=1)
-    print(far_stars.shape)
+           Parameters
+           ----------
+           magnitude_g : float | array of float, shape (n_stars,)
+               The apparent magnitude of the star(s).
+           color : float | array of float, shape (n_stars,)
+               The color of the star(s), computed as magnitude_blue - magnitude_red.
+           beta: array of float, shape (6,)
+               The regression weights.
 
-    distance_from_color = predict_distance(far_stars[:, 3], far_stars[:, 4], far_stars[:, 5], beta)
-    distance_from_parallax = 3.28156 * (1 / (far_stars[:, 2] / 1000))
+           Returns
+           -------
+           distance : float
+               The estimated distance in light-years.
+           """
+           magnitude = predict_magnitude(color, beta)
+           parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+           distance_parsecs = 1 / (parallax / 1000)
+           return distance_parsecs * 3.26156  # convert to light-years
 
-    print(distance_from_color[:10])
-    print(distance_from_parallax[:10])
+       lmc = np.genfromtxt("../resources/data/numpy/lmc_stars.csv", delimiter=",", skip_header=1)
+       distance = predict_distance(lmc[:, 3], lmc[:, 4] - lmc[:, 5], beta)
+       print(distance.mean())
