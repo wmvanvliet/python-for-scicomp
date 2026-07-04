@@ -180,7 +180,12 @@ It produces a new array, of the same dimensions as the original array, but fille
 We call this a "boolean mask".
 We can combine multiple masks using Python's boolean "and" operator ``&``::
 
-    boolean_mask = (right_ascension > 160) & (right_ascension < 210) & (declination > 45) & (declination < 65)
+    boolean_mask = (
+        (right_ascension > 160) &
+        (right_ascension < 210) &
+        (declination > 45) &
+        (declination < 65)
+    )
 
 Once you have a boolean mask, you can apply it to any array as long at the dimension along which you are selecting has the same number of elements as the mask::
 
@@ -201,7 +206,7 @@ The `magnitude scale <https://en.wikipedia.org/wiki/Magnitude_(astronomy)>`__ wo
 
     # Make a figure with the position of the stars in the sky. You can take this at face
     # value for now. We will cover how to make figures in a later lesson.
-    import matplotlib.pyplt as plt
+    import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
     ax.scatter(big_dipper[:, 0], big_dipper[:, 1])
     ax.xaxis.set_inverted(True)  # right ascension goes from right-to-left
@@ -287,12 +292,12 @@ With the vast majority of the stars being main sequence stars, the median should
 There are various ways to create an array with equally spaced numbers.
 For example, there is the NumPy equivalent of Python's :func:`range` function, :func:`numpy.arange`::
 
-    bins = np.arange(0.5, 4, step=0.04)
+    bins = np.arange(0.1, 5, step=0.04)
 
 But for our purposes, :func:`numpy.linspace` is even better::
 
     n_bins = 100
-    bins = np.linspace(0.5, 4, num=n_bins)  # 100 numbers evenly spread between 0.5 and 4
+    bins = np.linspace(0.1, 5, num=n_bins)  # 100 numbers evenly spread between 0.1 and 4
 
 We could assign stars to their respective color bins using boolean masking, but NumPy offers the :func:`numpy.digitize` function especially for this purpose::
 
@@ -318,6 +323,11 @@ We will do this using a ``for`` loop and use a typical pattern for creating NumP
     # Convert the Python lists to NumPy arrays.
     bin_colors = np.array(bin_colors)
     bin_magnitudes = np.array(bin_magnitudes)
+
+    # The white dwarf stars with a color < 0.1 are all lumped in the first bin,
+    # so that bin is unreliable.
+    bin_colors = bin_colors[1:]
+    bin_magnitudes = bin_magnitudes[1:]
 
 .. note::
    Appending values to a Python list is very fast, but appending values to a NumPy array is very slow. This is why we first collect the values in a Python list and then convert it to a NumPy array.
@@ -390,7 +400,7 @@ NumPy comes with a style guide for writing docstrings for functions called `NumP
         Parameters
         ----------
         color : float | array of float, shape (n_stars,)
-            The color of the star(s), computed as red - blue.
+            The color of the star(s), computed as magnitude_blue - magnitude_red.
         beta: array of float, shape (6,)
             The regression weights.
 
@@ -400,27 +410,35 @@ NumPy comes with a style guide for writing docstrings for functions called `NumP
             The estimated intrinsic magnitude of the star(s).
         """
         return (
-            beta[5] * color ** 5
+            beta[5] * color ** 5 +
             beta[4] * color ** 4 +
             beta[3] * color ** 3 +
             beta[2] * color ** 2 +
             beta[1] * color +
-            beta[0] +
+            beta[0]
         )
 
-Let's use our ``predict_magnitude`` function to create a function that predicts the distance of a star given its color and apparent magnitude.::
+To do the final estimation of a star's distance, we can compare our estimate of the intrinsic magnitude of a star based on its color, with the apparent magnitude of the star on our sensors.
+The further away the star is, the dimmer it appears to us.
+Recall this formula we used earlier::
 
-    def predict_distance(magnitude_g, magnitude_red, magnitude_blue, beta):
+    magnitude = magnitude_g + 5 * np.log10(parallax) - 10
+
+We can solve for ``parallax``, which gives us::
+
+    estimated_parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+
+That makes our final function that predicts the distance of a star given its color and apparent magnitude::
+
+    def predict_distance(magnitude_g, color, beta):
         """Predict a main sequence star's distance given its apparent magnitude and color.
 
         Parameters
         ----------
         magintude_g : float | array of float, shape (n_stars,)
             The apparent magnitude of the star(s).
-        magnitude_red : float | array of float, shape (n_stars,)
-            The red component of the color of the star(s).
-        magnitude_blue : float | array of float, shape (n_stars,)
-            The blue component of the color of the star(s).
+        color : float | array of float, shape (n_stars,)
+            The color of the star(s), computed as magnitude_blue - magnitude_red.
         beta: array of float, shape (6,)
             The regression weights.
 
@@ -429,17 +447,19 @@ Let's use our ``predict_magnitude`` function to create a function that predicts 
         distance : float
             The estimated distance in light-years.
         """
-        color = magnitude_red - magnitude_blue
-        predicted_magnitude = predict_magnitude(color, beta)
-        # Inverse of the formula we used to derive intrinsic magnitude from apparent magnitude.
-        predicted_distance_parsecs = np.pow(10, ((magnitude_g - predicted_magnitude) + 10) / 5)
-        return predicted_distance_parsecs * 3.26156
+        magnitude = predict_magnitude(color, beta)
+        parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+        distance_parsecs = 1 / (parallax / 1000)
+        return distance_parsecs * 3.26156  # convert to light-years
 
-A sample of some far away main sequence stars in the Gaia dataset can be found in :download:`../resources/data/numpy/far_stars.csv`.
-Their parallax values may be unreliable, so let's predict their distance using main sequence fitting::
+Some far away main sequence stars from the Gaia dataset can be found in :download:`../resources/data/numpy/far_stars.csv`.
+Let's predict their distance using main sequence fitting, and compare that with the distance we obtain from their parallax values::
 
     far_stars = np.genfromtxt("../resources/data/numpy/far_stars.csv", delimiter=",", skip_header=1)
     print(far_stars.shape)
 
-    far_stars_distance = predict_distance(far_stars[:, 3], far_stars[:, 4], far_stars[:, 5], beta)
-    print(far_stars_distance)
+    distance_from_color = predict_distance(far_stars[:, 3], far_stars[:, 4], far_stars[:, 5], beta)
+    distance_from_parallax = 3.28156 * (1 / (far_stars[:, 2] / 1000))
+
+    print(distance_from_color[:10])
+    print(distance_from_parallax[:10])
