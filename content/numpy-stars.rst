@@ -47,7 +47,7 @@ We can use the amount of parallax to determine how far away a star is.
    :width: 300px
    :align: center
 
-   Visual explanation of the parallax effect. Image `retrieved from Wikipedia <https://commons.wikimedia.org/wiki/File:Stellarparallax_parsec1.svg>`__. Public domain.
+   Visual explanation of the parallax effect. Image `retrieved from WikiMedia <https://commons.wikimedia.org/wiki/File:Stellarparallax_parsec1.svg>`__. Public domain.
 
 A sample of the Gaia data can be found in :download:`../resources/data/numpy/local_stars.csv`.
 This is a *comma separated value (CSV)* file, where each line contains 6 numbers describing a single object.
@@ -56,7 +56,7 @@ The first line of that file is the "header" indicating the meaning of each numbe
     with open("../resources/data/numpy/local_stars.csv") as f:
         # The file handle `f` acts as a generator that yields lines of text.
         first_line = next(f)  # take a single item from the generator
-        names = first_line.split(",")  # split on commas to get a list of individual names
+        names = first_line.strip().split(",")  # get a list of individual names
     print(names)
 
 We can use one of NumPy's functions to load the entire file into memory::
@@ -74,22 +74,22 @@ The ``data`` variable is a NumPy array::
 What is an array?
 -----------------
 
-An array is a "grid" of values, with all the same type, tightly packed into memory side-by-side.
-This is why we skipped the first line of the file containing ``str`` type descriptions, so that we were only reading numbers.
-In our case, the data type of the array is::
+An array is a collection of values which are all of the same datatype, tightly packed side-by-side in a continuous chunk of memory.
+This is why we had to skip the first line of the file, the one containing ``str`` type descriptions, so that we were only reading numbers.
+In our case, the datatype of the resulting array is::
 
     print(data.dtype)
 
-Arrays can have any number of dimensions::
+Arrays can have any number of dimensions, ours has::
 
     print(data.ndim)
 
 You can think of a 1D array as a *list* and a 2D array as a *table*.
-In mathematics, we call a 1D array a *vector*, a 2D array a *matrix*, and an array with 3 or even more dimensions a *tensor*.
+Alternatively, in mathematics, we call a 1D array a *vector*, a 2D array a *matrix*, and an array with 3 or even more dimensions a *tensor*.
 An array can even have zero dimensions if it represents a single *scalar* number.
 Regardless of how many dimensions the array has, it is always a Python object of type :class:`numpy.ndarray`.
 
-Let's see how many stars we have::
+Let's see how many stars we have. The ``.shape`` property of an array contains the size along each dimension::
 
     print(data.shape)
 
@@ -106,16 +106,17 @@ We have information on more than a million stars, and for each star we have 6 va
 Working with arrays
 -------------------
 
-The way the array is laid out in memory makes it very fast to select portions of the data, by "indexing" or "slicing" the array.
-You can index/slice arrays in a similar manner as Python lists, but you specify an index/slice for each dimension.
-At the moment, we are only interested in the parallax value of each star, so let's extract that column and store it in a variable of its own::
+Let's compute the distance to some well known stars in our night's sky.
+For that, we need to extract the parallax measurements from the ``data`` array, which are in the column with index ``2``.
+The way the array is laid out in memory makes it very fast to select portions of the data.
+We can index/slice arrays in a similar manner as Python lists using ``[index]``, but we do this separately along each dimension: ``[row_index, col_index]``::
 
     parallax = data[:, 2]  # `:` is a shorthand for "select everything along this dimension"
     print(parallax)
 
 Now for some basic math.
 The parallax values are currently in `milli-arc-seconds <https://en.wikipedia.org/wiki/Minute_and_second_of_arc>`__.
-Let's convert that into distance.
+We need to convert that into distance.
 A common distance metric is the `"parsec" <https://en.wikipedia.org/wiki/Parsec>`__, which is the distance at which an object has a parallax of exactly one arc-second, which is 3.26156 light-years::
 
     distance_parsecs = 1 / (parallax / 1000)  # 1000 milli-arc-seconds in an arc-second
@@ -150,7 +151,7 @@ To do this, we must first order the stars by distance::
     closest_indices = order_by_distance[:10]  # select the first 10 elements
     print(closest_indices)
 
-We now have a list (technically a 1D numpy.array) of integer indices of the stars closest to us.
+We now have a list (technically a 1D :class:`numpy.ndarray`) of integer indices of the stars closest to us.
 We can select multiple rows by indexing the array with such a list::
 
     closest_stars = data[closest_indices, :] 
@@ -162,7 +163,7 @@ Can we find the `Big Dipper <https://en.wikipedia.org/wiki/Ursa_Major>`__?
    :width: 300px
    :align: center
 
-   The Big Dipper as seen from Fujian. Image `retrieved from Wikipedia <https://en.wikipedia.org/wiki/Big_Dipper#/media/File:Big_Dipper_20210116.jpg>`__. CC BY license.
+   The Big Dipper as seen from Fujian. Image `retrieved from WikiMedia <https://en.wikipedia.org/wiki/Big_Dipper#/media/File:Big_Dipper_20210116.jpg>`__. CC BY license.
 
 
 It lies within a section of the sky with a `right ascension <https://en.wikipedia.org/wiki/Right_ascension>`__ from 160 to 210 degrees, and a `declination <https://en.wikipedia.org/wiki/Declination>`__ from 45 to 65 degrees::
@@ -187,22 +188,22 @@ We can combine multiple masks using Python's boolean "and" operator ``&``::
         (declination < 65)
     )
 
-Once you have a boolean mask, you can apply it to any array as long at the dimension along which you are selecting has the same number of elements as the mask::
+Once you have a boolean mask, you can apply it to any dimension of the array as long as it has the same number of elements as the mask::
 
     sky_section = data[boolean_mask, :]
     print(sky_section.shape)
 
 In our dataset, there are more than 15k stars in our chosen section of sky.
 The Big Dipper should consist of the 7 brightest ones.
-Column 3, named `magnitude_g` denotes bright the star looks as seen by the Gaia sattelite.
+The column with index ``3``, named ``magnitude_g``, denotes how bright the star looks as seen by the Gaia sattelite.
 The `magnitude scale <https://en.wikipedia.org/wiki/Magnitude_(astronomy)>`__ works "in reverse", such that very bright stars have a magnitude of 1 and weaker stars have a larger magnitude.
 
 .. code::
 
     # Select the 7 brightest stars in our section of sky.
     order_by_magnitude = np.argsort(sky_section[:, 3])
-    sky_section = sky_section[order_by_magnitude, :]
-    big_dipper = sky_section[:7]
+    brightest_stars = order_by_magnitude[:7]
+    big_dipper = sky_section[brightest_stars, :]
 
     # Make a figure with the position of the stars in the sky. You can take this at face
     # value for now. We will cover how to make figures in a later lesson.
@@ -215,7 +216,7 @@ The `magnitude scale <https://en.wikipedia.org/wiki/Magnitude_(astronomy)>`__ wo
     ax.set_ylabel("declination (degrees)")
 
 
-Clever and efficient use of these operations is a key to NumPy's speed: you should try to cleverly use these selectors (written in C) to extract data to be used with other NumPy functions written in C or Fortran.
+Clever and efficient use of these indexing and mathematical operations is the key to NumPy's speed: you should try to cleverly use these selectors (written in C) to extract data to be used with other NumPy functions written in C or Fortran.
 This will give you the benefits of Python with most of the speed of C.
 
 .. seealso::
@@ -236,9 +237,7 @@ Exercises 1
       What is the distance from us to Alpha Centauri AB?
    #. What is the distance from us to the brightest star in the dataset (`Sirius <https://en.wikipedia.org/wiki/Sirius>`__)?
       Remember that a smaller magnitude means a brighter star.
-      You can use :func:`numpy.argmin` to compute the index of the minimum value in an array.
    #. How many stars are there in the dataset that are even brighter than the brightest star in the Big Dipper (`Alioth <https://en.wikipedia.org/wiki/Alioth>`__)?
-      You can use :func:`numpy.min` to compute the minimum value in an array.
 
 .. solution:: Solution Numpy-1
 
@@ -251,25 +250,27 @@ Exercises 1
 Part 2: Estimating the distance of really far away stars
 --------------------------------------------------------
 
-On the southern hemisphere, you can see a large cluster of stars, 12 times wider than the moon:
+When you are on the southern hemisphere of the Earth, you can see a massive cluster of stars, 20 times wider than the moon:
 
 .. figure:: img/numpy/Large_Magellanic_Cloud.jpg
    :width: 500px
    :align: center
 
-   The Large Magallanic Cloud. Image created by Martin Bernard, `retrieved from Wikipedia <https://commons.wikimedia.org/wiki/File:Large_Magellanic_Cloud_100mm.jpg>`__. CC BY-SA license.
+   The Large Magallanic Cloud. Photographed and edited by Martin Bernard, `retrieved from WikiMedia <https://commons.wikimedia.org/wiki/File:Large_Magellanic_Cloud_100mm.jpg>`__. CC BY-SA license.
 
-It is so far away, the parallax is so small that even the Gaia satellite cannot reliably measure it.
-Still, we can estimate roughly how far away it is, based on a striking relationship between the brightness and the color of a star.
+Its parallax is so small that even the Gaia satellite cannot reliably measure it, which means it must be pretty far away.
+Still, we can estimate its distance, based on a striking relationship between the brightness and the color of a star.
 A `Hertzsprung-Russel diagram <https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram>`__ illustrates this.
 Let's make one!
 
-In our data, column 3 contains the measurements of the apparent brightness of each star according to Gaia's sensors.
-For the Hertzsprung-Russel diagram, we need to estimate the intrinsic brightness (the luminosity) of the stars, compensating for the fact that the further a star is, the dimmer it appears to us.
-We will use the formula given in the `official Gaia paper <https://doi.org/10.1051/0004-6361/201832843>`__ for this::
+Recall that in our ``data`` array, the column with index ``3`` contains the measurements of the apparent brightness of each star according to Gaia's sensors (``magnitude_g``).
+For the Hertzsprung-Russel diagram, we need to estimate their true magnitude (luminosity), compensating for the fact that the further a star is, the dimmer it appears to us.
+We will use the formula given in an `official Gaia paper <https://doi.org/10.1051/0004-6361/201832843>`__ for this::
 
     magnitude_g = data[:, 3]  # apparent magnitude
     magnitude = magnitude_g + 5 * np.log10(parallax) - 10  # true magnitude
+
+The :data:`numpy.log10` function is part of NumPy's vast collection of `ufuncs <https://numpy.org/doc/stable/reference/ufuncs.html#available-ufuncs>`__, which are functions that operate on each element of an array.
 
 In our diagram, we want to show the color of a star on a scale from "very blue" to "very red", with yellow stars in between.
 We can compute this by taking the difference between the blue and red components of its color::
@@ -302,7 +303,7 @@ Then, we can compare that true brightness with its apparent brightness to deduce
 Creating arrays
 ---------------
 
-The first step is to extract a bunch of ``(color, magnitude)`` pairs along the main sequence, free from all the outliers.
+The first step is to extract a bunch of ``(color, magnitude)`` pairs along the main sequence, free from outliers.
 The strategy is to divide the color spectrum into 100 bins and take the median magnitude in each bin.
 With the vast majority of the stars being main sequence stars, the median should be very representative of the general curve of the main sequence.
 
@@ -321,7 +322,7 @@ We could assign stars to their respective color bins using boolean masking, but 
     bin_assignment = np.digitize(color, bins)
     print(bin_assignment)
 
-The function gives for each element of the ``color`` array (as an integer index), the index of the bin it belongs to.
+The function gives for each element of the ``color`` array, the index of the bin it belongs to.
 Since each element of the ``color`` array is the color of a star, we have effectively assigned each star to a bin.
 Now, we can compute for each bin, the median brightness and color of all the stars in that bin.
 We will do this using a ``for`` loop and use a typical pattern for creating NumPy arrays: we first collect the values into a Python list and then convert that list into a NumPy array::
@@ -342,7 +343,7 @@ We will do this using a ``for`` loop and use a typical pattern for creating NumP
     bin_magnitudes = np.array(bin_magnitudes)
 
     # The white dwarf stars with a color < 0.1 are all lumped in the first bin,
-    # so that bin is unreliable.
+    # so that bin is unreliable, chop it off.
     bin_colors = bin_colors[1:]
     bin_magnitudes = bin_magnitudes[1:]
 
@@ -379,7 +380,7 @@ A typical way to do this is a machine learning technique called `ordinary least 
    \beta = (X^T X)^{-1} X^T Y
 
 The resulting ``beta`` vector contains the optimal linear combination (in the least-squares sense) of the columns of ``X`` to predict the columns of ``Y``.
-So, we create a 2D array ``X`` where the columns are ``bin_colors`` raised to different powers and set ``Y`` to ``bin_magnitude``.
+So, if we create a 2D array ``X`` where the columns are ``bin_colors`` raised to different powers, and set ``Y`` to ``bin_magnitude``, we should obtain the beta values we need.
 The code below does this, while demonstrating how to create a 2D array by gluing 1D arrays together, and how to generate an array containing only ``1``'s::
 
     X = np.column_stack((
@@ -403,6 +404,9 @@ Using NumPy, the Python code can look very much like the math formula::
     beta = np.linalg.inv(X.T @ X) @ X.T @ Y
     print(beta)
 
+.. seealso::
+   `Numpy linear algebra functionality <https://numpy.org/doc/stable/reference/routines.linalg.html>`__.
+
 
 Creating and documenting functions in the scientific computing style
 --------------------------------------------------------------------
@@ -419,12 +423,12 @@ NumPy comes with a style guide for writing docstrings for functions called `NumP
         color : float | array of float, shape (n_stars,)
             The color of the star(s), computed as magnitude_blue - magnitude_red.
         beta: array of float, shape (6,)
-            The regression weights.
+            The coefficients describing the main-sequence curve.
 
         Returns
         -------
         magnitude : float
-            The estimated intrinsic magnitude of the star(s).
+            The estimated true magnitude of the star(s).
         """
         return (
             beta[5] * color ** 5 +
@@ -441,52 +445,63 @@ Exercises 2
 
 .. challenge:: Exercises: Numpy-2
 
-   To do the final estimation of a star's distance, we can compare our estimate of the intrinsic magnitude of a star based on its color, with the apparent magnitude of the star on our sensors.
-   The further away the star is, the dimmer it appears to us.
-   Recall this formula we used earlier::
+   In this exercise, you will estimate the distance to the Large Magallanic Cloud.
+
+   We have shown you how to estimate the true magnitude of a star based on its color and we wrote the ``predict_magnitude`` function to do it.
+   To predict distance, you can compare a star's estimated true magnitude with its apparent magnitude on Gaia's sensors.
+   The further away the star is, the dimmer it appears to Gaia.
+   Recall the formula we used earlier::
    
        magnitude = magnitude_g + 5 * np.log10(parallax) - 10
    
-   We can solve for ``parallax``, which gives us::
+   When we solve for ``parallax``, we get::
    
        estimated_parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
    
-   1. Write a function to predict the distance of a star given its color and apparent magnitude:
+   1. Write a function to predict the distance of a star given its apparent magnitude, its color, and the ``beta`` coefficients we computed:
 
-      1. Use the ``predict_magnitude`` function to estimate the intrinsic magnitude.
-      2. Use the formula above to convert the difference between the apparent magnitude (``magnitude_g``) and intrinsic magnitude to a parallax value.
+      1. Use the ``predict_magnitude`` function to estimate the true magnitude.
+      2. Use the formula above to convert the difference between the apparent magnitude (``magnitude_g``) and true magnitude (``magnitude``) to a parallax value.
       3. Convert the parallax value to a distance in light-years. See the lesson material above on how to do this if you don't remember.
 
    2. Some main sequence stars from the Large Magallanic Cloud can be found in :download:`../resources/data/numpy/lmc_stars.csv`.
+      To read it, use :func:`numpy.genfromtext` in the same manner as we did with the ``data`` array.
       Predict their distance using the function you just created and take the average (:func:`numpy.mean`) as a representative value for roughly how far away the cloud is.
       Given that the `Milky Way <https://en.wikipedia.org/wiki/Milky_Way>`__ galaxy is about 87400 light-years across, what does the distance to the Large Magallanic Cloud tell us?
 
 .. solution:: Solution Numpy-2
 
-   .. code::
+   #. .. code::
 
-       def predict_distance(magnitude_g, color, beta):
-           """Predict a main sequence star's distance given its apparent magnitude and color.
+          def predict_distance(color, magnitude_g, beta):
+              """Predict a main sequence star's distance given its apparent magnitude and color.
 
-           Parameters
-           ----------
-           magnitude_g : float | array of float, shape (n_stars,)
-               The apparent magnitude of the star(s).
-           color : float | array of float, shape (n_stars,)
-               The color of the star(s), computed as magnitude_blue - magnitude_red.
-           beta: array of float, shape (6,)
-               The regression weights.
+              Parameters
+              ----------
+              magnitude_g : float | array of float, shape (n_stars,)
+                  The apparent magnitude of the star(s).
+              color : float | array of float, shape (n_stars,)
+                  The color of the star(s), computed as magnitude_blue - magnitude_red.
+              beta: array of float, shape (6,)
+                   The coefficients describing the main-sequence curve.
 
-           Returns
-           -------
-           distance : float
-               The estimated distance in light-years.
-           """
-           magnitude = predict_magnitude(color, beta)
-           parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
-           distance_parsecs = 1 / (parallax / 1000)
-           return distance_parsecs * 3.26156  # convert to light-years
+              Returns
+              -------
+              distance : float
+                  The estimated distance in light-years.
+              """
+              magnitude = predict_magnitude(color, beta)
+              parallax = np.pow(10, (magnitude - magnitude_g + 10) / 5)
+              distance_parsecs = 1 / (parallax / 1000)
+              return distance_parsecs * 3.26156  # convert to light-years
 
-       lmc = np.genfromtxt("../resources/data/numpy/lmc_stars.csv", delimiter=",", skip_header=1)
-       distance = predict_distance(lmc[:, 3], lmc[:, 4] - lmc[:, 5], beta)
-       print(distance.mean())
+   #. .. code ::
+
+          lmc = np.genfromtxt(
+              "../resources/data/numpy/lmc_stars.csv", delimiter=",", skip_header=1
+          )
+          distance = predict_distance(lmc[:, 3], lmc[:, 4] - lmc[:, 5], beta)
+          print(distance.mean())
+
+     The Large Magallanic Cloud is roughly 158000 light-years away.
+     This means it does not lie in our galaxy, but must be a galaxy of its own.
