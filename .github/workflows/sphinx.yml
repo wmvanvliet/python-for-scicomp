@@ -96,6 +96,12 @@ jobs:
           make singlehtml
           mv _build/singlehtml/ _build/dirhtml/singlehtml/
 
+      - name: Save HTML as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-dev
+          path: _build/dirhtml
+
       # PDF if requested
       - name: Generate PDF
         if: ${{ env.GENERATE_PDF == 'true' }}
