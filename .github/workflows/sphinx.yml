@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: html-dev
-          path: _build/dirhtml
+          path: _build
 
       # PDF if requested
       - name: Generate PDF
