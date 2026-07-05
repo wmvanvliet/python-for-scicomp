@@ -15,14 +15,12 @@ NumPy Stars
    - Be able to use basic NumPy functionality
    - Understand enough of NumPy to search for answers to the rest of your questions ;)
 
-   We expect most people to be able to do all the basic exercises here.
-   For those who are already familiar with the basics and desire something more challenging, we have more advanced exercises at the end.
-
 .. admonition:: Example context
    :class: demo
 
    Each lesson is placed inside an example scientific setting.
    In this lesson, we will compute the distance of the stars in our night sky, using the data collected by the Gaia sattelite.
+   To follow along, you must download the :download:`data package <https://drive.google.com/file/d/1ZbZIpf-tL60S18k9f8LI_YdTe9o8jy-I/view?usp=sharing>` and unzip it in the ``python-for-scicomp`` folder.
 
 NumPy is the most used library for scientific computing.
 Even if you are not using it directly, chances are high that some library uses it in the background.
@@ -32,7 +30,7 @@ It helps you work with "data", as in large amounts of numbers, by providing:
 2. Efficient routines to manipulate data, such as reading and writing, splitting and concatenation, and other transformations
 3. Efficient routines to perform computations on data, such as statistics and linear algebra
 
-Let's explore the fundamentals of this foundational library by analyzing some astronomical data.
+Let's explore the fundamentals of this foundational library by analyzing some astronomical data and discover the secret of the Large Magallanic Cloud.
 
 .. highlight:: python
 
