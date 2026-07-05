@@ -1,7 +1,7 @@
 .. _numpy_stars:
 
-NumPy Stars
-===========
+NumPy
+=====
 
 .. questions::
 
