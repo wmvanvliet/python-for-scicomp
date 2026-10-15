@@ -315,7 +315,7 @@ Now we have everything we need to make the plot. Again, just take this plotting 
     plt.ylabel("Magnitude")
     plt.tight_layout()
 
-Other than the main sequence stars, you can see the red giants branching off at the top, bright but red, and the white dwarfs at the bottom, very dim but white.
+Other than the main sequence stars, you can see the red giants branching off at the top, bright but yellow/red, and the white dwarfs at the bottom, very dim but blue/white.
 
 Based on this chart, we can derive a formula to translate the color of a main sequence star (so not a red giant or white dwarf) to its true brightness.
 Then, we can compare that true brightness with its apparent brightness to deduce how much dimmer it appears to us than it actually is, hence how far away it must be.
