@@ -501,7 +501,7 @@ Exercises 2
 
    #. .. code::
 
-          def predict_distance(color, magnitude_g, beta):
+          def predict_distance(magnitude_g, color, beta):
               """Predict a main sequence star's distance given its apparent magnitude and color.
 
               Parameters
@@ -529,7 +529,7 @@ Exercises 2
               "../resources/data/numpy/lmc_stars.csv", delimiter=",", skip_header=1
           )
           distance = predict_distance(lmc[:, 3], lmc[:, 4] - lmc[:, 5], beta)
-          print(np.mean(distance.mean))
+          print(np.mean(distance))
 
      The Large Magallanic Cloud is roughly 158000 light-years away.
      This means it does not lie in our galaxy, but must be a galaxy of its own.
