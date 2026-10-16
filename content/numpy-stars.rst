@@ -312,7 +312,7 @@ Now we have everything we need to make the plot. Again, just take this plotting 
     plt.gca().invert_yaxis()  # put bright stars on top, dim stars at the bottom
     plt.title("Hertzsprung-Russell diagram")
     plt.xlabel("Color (Blue ⇨ Red)")
-    plt.ylabel("Magnitude")
+    plt.ylabel("Intrinsic magnitude")
     plt.tight_layout()
 
 Other than the main sequence stars, you can see the red giants branching off at the top, bright but yellow/red, and the white dwarfs at the bottom, very dim but blue/white.
