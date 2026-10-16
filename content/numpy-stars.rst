@@ -397,7 +397,7 @@ The curve is not a straight line, but something like a fifth order polynomial sh
 .. note::
    If you wish to skip the demonstration of how to perform linear algebra, you can use NumPy's build-in function to fit the polynomial function::
 
-       beta = np.polyfit(bin_colors, 5)
+       beta = np.polyfit(bin_colors, bin_magnitudes, deg=5)
 
 A typical way to do this is a machine learning technique called `ordinary least squares (OLS) <https://en.wikipedia.org/wiki/Ordinary_least_squares>`__, where we collect everything we know in a matrix ``X`` and everything we wish to predict in a matrix ``Y`` and compute:
 
